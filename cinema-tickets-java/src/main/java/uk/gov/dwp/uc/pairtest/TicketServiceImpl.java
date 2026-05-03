@@ -26,22 +26,8 @@ public class TicketServiceImpl implements TicketService {
         validateAccount(accountId);
         validateTicketRequests(ticketTypeRequests);
 
-        int amountToPay = 0;
-        int seatsToReserve = 0;
-
-        for (TicketTypeRequest ticketTypeRequest : ticketTypeRequests) {
-            int noOfTickets = ticketTypeRequest.getNoOfTickets();
-
-            if (ticketTypeRequest.getTicketType() == TicketTypeRequest.Type.ADULT) {
-                amountToPay += noOfTickets * ADULT_TICKET_PRICE;
-                seatsToReserve += noOfTickets;
-            }
-
-            if (ticketTypeRequest.getTicketType() == TicketTypeRequest.Type.CHILD) {
-                amountToPay += noOfTickets * CHILD_TICKET_PRICE;
-                seatsToReserve += noOfTickets;
-            }
-        }
+        int amountToPay = calculateAmountToPay(ticketTypeRequests);
+        int seatsToReserve = calculateSeatsToReserve(ticketTypeRequests);
 
         paymentService.makePayment(accountId, amountToPay);
         reservationService.reserveSeat(accountId, seatsToReserve);
@@ -58,19 +44,33 @@ public class TicketServiceImpl implements TicketService {
             throw new InvalidPurchaseException();
         }
 
-        int totalTickets = 0;
+        for (TicketTypeRequest ticketTypeRequest : ticketTypeRequests) {
+            validateTicketRequest(ticketTypeRequest);
+        }
+
+        validateTicketLimit(ticketTypeRequests);
+        validateAdultRequired(ticketTypeRequests);
+    }
+
+    private void validateTicketRequest(TicketTypeRequest ticketTypeRequest) {
+        if (ticketTypeRequest == null
+                || ticketTypeRequest.getTicketType() == null
+                || ticketTypeRequest.getNoOfTickets() <= 0) {
+            throw new InvalidPurchaseException();
+        }
+    }
+
+    private void validateTicketLimit(TicketTypeRequest[] ticketTypeRequests) {
+        if (countTickets(ticketTypeRequests) > MAX_TICKETS_PER_PURCHASE) {
+            throw new InvalidPurchaseException();
+        }
+    }
+
+    private void validateAdultRequired(TicketTypeRequest[] ticketTypeRequests) {
         boolean hasAdultTicket = false;
         boolean hasChildOrInfantTicket = false;
 
         for (TicketTypeRequest ticketTypeRequest : ticketTypeRequests) {
-            if (ticketTypeRequest == null
-                    || ticketTypeRequest.getTicketType() == null
-                    || ticketTypeRequest.getNoOfTickets() <= 0) {
-                throw new InvalidPurchaseException();
-            }
-
-            totalTickets += ticketTypeRequest.getNoOfTickets();
-
             if (ticketTypeRequest.getTicketType() == TicketTypeRequest.Type.ADULT) {
                 hasAdultTicket = true;
             }
@@ -81,13 +81,53 @@ public class TicketServiceImpl implements TicketService {
             }
         }
 
-        if (totalTickets > MAX_TICKETS_PER_PURCHASE) {
-            throw new InvalidPurchaseException();
-        }
-
         if (hasChildOrInfantTicket && !hasAdultTicket) {
             throw new InvalidPurchaseException();
         }
+    }
+
+    private int calculateAmountToPay(TicketTypeRequest[] ticketTypeRequests) {
+        int amountToPay = 0;
+
+        for (TicketTypeRequest ticketTypeRequest : ticketTypeRequests) {
+            amountToPay += ticketTypeRequest.getNoOfTickets() * priceFor(ticketTypeRequest.getTicketType());
+        }
+
+        return amountToPay;
+    }
+
+    private int calculateSeatsToReserve(TicketTypeRequest[] ticketTypeRequests) {
+        int seatsToReserve = 0;
+
+        for (TicketTypeRequest ticketTypeRequest : ticketTypeRequests) {
+            if (requiresSeat(ticketTypeRequest.getTicketType())) {
+                seatsToReserve += ticketTypeRequest.getNoOfTickets();
+            }
+        }
+
+        return seatsToReserve;
+    }
+
+    private int countTickets(TicketTypeRequest[] ticketTypeRequests) {
+        int totalTickets = 0;
+
+        for (TicketTypeRequest ticketTypeRequest : ticketTypeRequests) {
+            totalTickets += ticketTypeRequest.getNoOfTickets();
+        }
+
+        return totalTickets;
+    }
+
+    private int priceFor(TicketTypeRequest.Type ticketType) {
+        return switch (ticketType) {
+            case ADULT -> ADULT_TICKET_PRICE;
+            case CHILD -> CHILD_TICKET_PRICE;
+            case INFANT -> 0;
+        };
+    }
+
+    private boolean requiresSeat(TicketTypeRequest.Type ticketType) {
+        return ticketType != TicketTypeRequest.Type.INFANT;
     }
 
 }
