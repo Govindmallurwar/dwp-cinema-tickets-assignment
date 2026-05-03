@@ -59,6 +59,8 @@ public class TicketServiceImpl implements TicketService {
         }
 
         int totalTickets = 0;
+        boolean hasAdultTicket = false;
+        boolean hasChildOrInfantTicket = false;
 
         for (TicketTypeRequest ticketTypeRequest : ticketTypeRequests) {
             if (ticketTypeRequest == null
@@ -68,9 +70,22 @@ public class TicketServiceImpl implements TicketService {
             }
 
             totalTickets += ticketTypeRequest.getNoOfTickets();
+
+            if (ticketTypeRequest.getTicketType() == TicketTypeRequest.Type.ADULT) {
+                hasAdultTicket = true;
+            }
+
+            if (ticketTypeRequest.getTicketType() == TicketTypeRequest.Type.CHILD
+                    || ticketTypeRequest.getTicketType() == TicketTypeRequest.Type.INFANT) {
+                hasChildOrInfantTicket = true;
+            }
         }
 
         if (totalTickets > MAX_TICKETS_PER_PURCHASE) {
+            throw new InvalidPurchaseException();
+        }
+
+        if (hasChildOrInfantTicket && !hasAdultTicket) {
             throw new InvalidPurchaseException();
         }
     }

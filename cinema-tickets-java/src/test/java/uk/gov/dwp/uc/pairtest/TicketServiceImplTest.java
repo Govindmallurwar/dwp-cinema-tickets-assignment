@@ -141,6 +141,31 @@ class TicketServiceImplTest {
         );
     }
 
+    @Test
+    void rejectsChildTicketsWithoutAnAdultTicket() {
+        assertInvalidPurchase(() ->
+                ticketService.purchaseTickets(1L, new TicketTypeRequest(TicketTypeRequest.Type.CHILD, 2))
+        );
+    }
+
+    @Test
+    void rejectsInfantTicketsWithoutAnAdultTicket() {
+        assertInvalidPurchase(() ->
+                ticketService.purchaseTickets(1L, new TicketTypeRequest(TicketTypeRequest.Type.INFANT, 1))
+        );
+    }
+
+    @Test
+    void rejectsChildAndInfantTicketsWithoutAnAdultTicket() {
+        assertInvalidPurchase(() ->
+                ticketService.purchaseTickets(
+                        1L,
+                        new TicketTypeRequest(TicketTypeRequest.Type.CHILD, 1),
+                        new TicketTypeRequest(TicketTypeRequest.Type.INFANT, 1)
+                )
+        );
+    }
+
     private void assertInvalidPurchase(Executable purchase) {
         assertThrows(InvalidPurchaseException.class, purchase);
         verifyNoInteractions(paymentService, reservationService);
