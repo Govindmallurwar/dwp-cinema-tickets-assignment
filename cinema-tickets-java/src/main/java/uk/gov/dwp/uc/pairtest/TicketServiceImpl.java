@@ -10,6 +10,7 @@ public class TicketServiceImpl implements TicketService {
      * Should only have private methods other than the one below.
      */
     private static final int ADULT_TICKET_PRICE = 25;
+    private static final int CHILD_TICKET_PRICE = 15;
 
     private final TicketPaymentService paymentService;
     private final SeatReservationService reservationService;
@@ -21,10 +22,25 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public void purchaseTickets(Long accountId, TicketTypeRequest... ticketTypeRequests) throws InvalidPurchaseException {
-        int adultTickets = ticketTypeRequests[0].getNoOfTickets();
+        int amountToPay = 0;
+        int seatsToReserve = 0;
 
-        paymentService.makePayment(accountId, adultTickets * ADULT_TICKET_PRICE);
-        reservationService.reserveSeat(accountId, adultTickets);
+        for (TicketTypeRequest ticketTypeRequest : ticketTypeRequests) {
+            int noOfTickets = ticketTypeRequest.getNoOfTickets();
+
+            if (ticketTypeRequest.getTicketType() == TicketTypeRequest.Type.ADULT) {
+                amountToPay += noOfTickets * ADULT_TICKET_PRICE;
+                seatsToReserve += noOfTickets;
+            }
+
+            if (ticketTypeRequest.getTicketType() == TicketTypeRequest.Type.CHILD) {
+                amountToPay += noOfTickets * CHILD_TICKET_PRICE;
+                seatsToReserve += noOfTickets;
+            }
+        }
+
+        paymentService.makePayment(accountId, amountToPay);
+        reservationService.reserveSeat(accountId, seatsToReserve);
     }
 
 }

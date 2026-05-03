@@ -29,4 +29,41 @@ class TicketServiceImplTest {
         verify(paymentService).makePayment(1L, 50);
         verify(reservationService).reserveSeat(1L, 2);
     }
+
+    @Test
+    void chargesForAdultAndChildTicketsAndReservesASeatForEach() {
+        ticketService.purchaseTickets(
+                1L,
+                new TicketTypeRequest(TicketTypeRequest.Type.ADULT, 1),
+                new TicketTypeRequest(TicketTypeRequest.Type.CHILD, 2)
+        );
+
+        verify(paymentService).makePayment(1L, 55);
+        verify(reservationService).reserveSeat(1L, 3);
+    }
+
+    @Test
+    void doesNotChargeOrReserveASeatForInfants() {
+        ticketService.purchaseTickets(
+                1L,
+                new TicketTypeRequest(TicketTypeRequest.Type.ADULT, 2),
+                new TicketTypeRequest(TicketTypeRequest.Type.INFANT, 1)
+        );
+
+        verify(paymentService).makePayment(1L, 50);
+        verify(reservationService).reserveSeat(1L, 2);
+    }
+
+    @Test
+    void handlesAdultChildAndInfantTicketsTogether() {
+        ticketService.purchaseTickets(
+                1L,
+                new TicketTypeRequest(TicketTypeRequest.Type.ADULT, 2),
+                new TicketTypeRequest(TicketTypeRequest.Type.CHILD, 3),
+                new TicketTypeRequest(TicketTypeRequest.Type.INFANT, 1)
+        );
+
+        verify(paymentService).makePayment(1L, 95);
+        verify(reservationService).reserveSeat(1L, 5);
+    }
 }
