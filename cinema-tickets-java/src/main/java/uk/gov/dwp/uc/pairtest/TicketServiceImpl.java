@@ -22,6 +22,9 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public void purchaseTickets(Long accountId, TicketTypeRequest... ticketTypeRequests) throws InvalidPurchaseException {
+        validateAccount(accountId);
+        validateTicketRequests(ticketTypeRequests);
+
         int amountToPay = 0;
         int seatsToReserve = 0;
 
@@ -41,6 +44,18 @@ public class TicketServiceImpl implements TicketService {
 
         paymentService.makePayment(accountId, amountToPay);
         reservationService.reserveSeat(accountId, seatsToReserve);
+    }
+
+    private void validateAccount(Long accountId) {
+        if (accountId == null || accountId <= 0) {
+            throw new InvalidPurchaseException();
+        }
+    }
+
+    private void validateTicketRequests(TicketTypeRequest[] ticketTypeRequests) {
+        if (ticketTypeRequests == null || ticketTypeRequests.length == 0) {
+            throw new InvalidPurchaseException();
+        }
     }
 
 }

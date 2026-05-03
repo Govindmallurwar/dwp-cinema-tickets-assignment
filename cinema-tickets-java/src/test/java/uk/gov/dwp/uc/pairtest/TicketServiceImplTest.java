@@ -2,12 +2,16 @@ package uk.gov.dwp.uc.pairtest;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import thirdparty.paymentgateway.TicketPaymentService;
 import thirdparty.seatbooking.SeatReservationService;
 import uk.gov.dwp.uc.pairtest.domain.TicketTypeRequest;
+import uk.gov.dwp.uc.pairtest.exception.InvalidPurchaseException;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 class TicketServiceImplTest {
 
@@ -65,5 +69,41 @@ class TicketServiceImplTest {
 
         verify(paymentService).makePayment(1L, 95);
         verify(reservationService).reserveSeat(1L, 5);
+    }
+
+    @Test
+    void rejectsNullAccountId() {
+        assertInvalidPurchase(() ->
+                ticketService.purchaseTickets(null, new TicketTypeRequest(TicketTypeRequest.Type.ADULT, 1))
+        );
+    }
+
+    @Test
+    void rejectsZeroAccountId() {
+        assertInvalidPurchase(() ->
+                ticketService.purchaseTickets(0L, new TicketTypeRequest(TicketTypeRequest.Type.ADULT, 1))
+        );
+    }
+
+    @Test
+    void rejectsNegativeAccountId() {
+        assertInvalidPurchase(() ->
+                ticketService.purchaseTickets(-1L, new TicketTypeRequest(TicketTypeRequest.Type.ADULT, 1))
+        );
+    }
+
+    @Test
+    void rejectsNullTicketRequests() {
+        assertInvalidPurchase(() -> ticketService.purchaseTickets(1L, (TicketTypeRequest[]) null));
+    }
+
+    @Test
+    void rejectsEmptyTicketRequests() {
+        assertInvalidPurchase(() -> ticketService.purchaseTickets(1L));
+    }
+
+    private void assertInvalidPurchase(Executable purchase) {
+        assertThrows(InvalidPurchaseException.class, purchase);
+        verifyNoInteractions(paymentService, reservationService);
     }
 }
