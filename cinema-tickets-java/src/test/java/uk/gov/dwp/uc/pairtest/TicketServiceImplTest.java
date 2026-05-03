@@ -72,6 +72,33 @@ class TicketServiceImplTest {
     }
 
     @Test
+    void allowsExactlyTwentyFiveTickets() {
+        ticketService.purchaseTickets(
+                1L,
+                new TicketTypeRequest(TicketTypeRequest.Type.ADULT, 10),
+                new TicketTypeRequest(TicketTypeRequest.Type.CHILD, 10),
+                new TicketTypeRequest(TicketTypeRequest.Type.INFANT, 5)
+        );
+
+        verify(paymentService).makePayment(1L, 400);
+        verify(reservationService).reserveSeat(1L, 20);
+    }
+
+    @Test
+    void handlesRepeatedTicketTypesInOnePurchase() {
+        ticketService.purchaseTickets(
+                1L,
+                new TicketTypeRequest(TicketTypeRequest.Type.ADULT, 1),
+                new TicketTypeRequest(TicketTypeRequest.Type.ADULT, 2),
+                new TicketTypeRequest(TicketTypeRequest.Type.CHILD, 1),
+                new TicketTypeRequest(TicketTypeRequest.Type.INFANT, 1)
+        );
+
+        verify(paymentService).makePayment(1L, 90);
+        verify(reservationService).reserveSeat(1L, 4);
+    }
+
+    @Test
     void rejectsNullAccountId() {
         assertInvalidPurchase(() ->
                 ticketService.purchaseTickets(null, new TicketTypeRequest(TicketTypeRequest.Type.ADULT, 1))
