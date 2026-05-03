@@ -102,6 +102,45 @@ class TicketServiceImplTest {
         assertInvalidPurchase(() -> ticketService.purchaseTickets(1L));
     }
 
+    @Test
+    void rejectsNullTicketRequest() {
+        assertInvalidPurchase(() ->
+                ticketService.purchaseTickets(1L, new TicketTypeRequest(TicketTypeRequest.Type.ADULT, 1), null)
+        );
+    }
+
+    @Test
+    void rejectsTicketRequestWithNullType() {
+        assertInvalidPurchase(() ->
+                ticketService.purchaseTickets(1L, new TicketTypeRequest(null, 1))
+        );
+    }
+
+    @Test
+    void rejectsZeroTickets() {
+        assertInvalidPurchase(() ->
+                ticketService.purchaseTickets(1L, new TicketTypeRequest(TicketTypeRequest.Type.ADULT, 0))
+        );
+    }
+
+    @Test
+    void rejectsNegativeTickets() {
+        assertInvalidPurchase(() ->
+                ticketService.purchaseTickets(1L, new TicketTypeRequest(TicketTypeRequest.Type.ADULT, -1))
+        );
+    }
+
+    @Test
+    void rejectsMoreThanTwentyFiveTickets() {
+        assertInvalidPurchase(() ->
+                ticketService.purchaseTickets(
+                        1L,
+                        new TicketTypeRequest(TicketTypeRequest.Type.ADULT, 20),
+                        new TicketTypeRequest(TicketTypeRequest.Type.CHILD, 6)
+                )
+        );
+    }
+
     private void assertInvalidPurchase(Executable purchase) {
         assertThrows(InvalidPurchaseException.class, purchase);
         verifyNoInteractions(paymentService, reservationService);

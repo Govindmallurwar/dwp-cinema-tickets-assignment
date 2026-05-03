@@ -11,6 +11,7 @@ public class TicketServiceImpl implements TicketService {
      */
     private static final int ADULT_TICKET_PRICE = 25;
     private static final int CHILD_TICKET_PRICE = 15;
+    private static final int MAX_TICKETS_PER_PURCHASE = 25;
 
     private final TicketPaymentService paymentService;
     private final SeatReservationService reservationService;
@@ -54,6 +55,22 @@ public class TicketServiceImpl implements TicketService {
 
     private void validateTicketRequests(TicketTypeRequest[] ticketTypeRequests) {
         if (ticketTypeRequests == null || ticketTypeRequests.length == 0) {
+            throw new InvalidPurchaseException();
+        }
+
+        int totalTickets = 0;
+
+        for (TicketTypeRequest ticketTypeRequest : ticketTypeRequests) {
+            if (ticketTypeRequest == null
+                    || ticketTypeRequest.getTicketType() == null
+                    || ticketTypeRequest.getNoOfTickets() <= 0) {
+                throw new InvalidPurchaseException();
+            }
+
+            totalTickets += ticketTypeRequest.getNoOfTickets();
+        }
+
+        if (totalTickets > MAX_TICKETS_PER_PURCHASE) {
             throw new InvalidPurchaseException();
         }
     }
